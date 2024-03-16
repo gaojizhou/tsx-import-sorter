@@ -3,6 +3,8 @@
   "displayName": "tsx-import-sorter",
   "description": "",
   "version": "0.0.1",
+  "repository": "https://github.com/gaojizhou/tsx-import-sorter",
+  "publisher": "jacobgao",
   "engines": {
     "vscode": "^1.87.0"
   },
