@@ -1,14 +1,45 @@
 import * as vscode from 'vscode';
 
-function sortImports() {
-    // 获取活动编辑器
+function caseInsensitiveSort(a: string, b: string): number {
+    const charCodeA = a.charCodeAt(0);
+    const charCodeB = b.charCodeAt(0);
+
+    if (a === a.toUpperCase()) {
+        a = a.toLowerCase();
+    }
+    if (b === b.toUpperCase()) {
+        b = b.toLowerCase();
+    }
+
+    if (a < b) { return -1; };
+    if (a > b) { return 1; };
+
+
+    if (charCodeA < charCodeB) { return -1; };
+    if (charCodeA > charCodeB) { return 1; };
+    return 0;
+}
+
+function extractBetweenImportAndFrom(inputString: string): string | undefined {
+    const matches: RegExpMatchArray | null = inputString.match(/import\s+(.*?)\s+from/);
+
+    if (matches) {
+        const values = matches[1].trim().split(',').filter(item => item.length > 0).map(item => item.trim());
+        return values.join(', ');
+    } else {
+        return undefined;
+    }
+}
+
+
+async function sortImports() {
+
+
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
         vscode.window.showErrorMessage('No active editor!');
         return;
     }
-console.log()
-    // 获取当前文件的内容
     const document = editor.document;
     const text = document.getText();
 
@@ -21,45 +52,118 @@ console.log()
         return;
     }
 
-    // 对 import 语句进行排序
-    const sortedImports = importMatches.sort((a, b) => a.localeCompare(b));
+    const starList: string[] = [];
+    const singleList: string[] = [];
+    const oneBracketList: string[] = [];
+    const bracketsList: string[] = [];
+    const singleAndBracketsList: string[] = [];
 
-    // 生成替换后的文本
-    const newText = text.replace(importRegex, () => sortedImports.shift() || '');
+    const importLineNumbers: number[] = [];
 
-    // 应用替换并保存
-    editor.edit(editBuilder => {
-        const fullRange = new vscode.Range(document.positionAt(0), document.positionAt(text.length));
-        editBuilder.replace(fullRange, newText);
-    }).then(success => {
-        if (success) {
-            vscode.window.showInformationMessage('Imports sorted successfully!');
-        } else {
-            vscode.window.showErrorMessage('Failed to sort imports!');
+    importMatches.forEach((match: string) => {
+        if (match.includes('/*') || match.includes('//')) {
+            return;
         }
+        const index = text.indexOf(match);
+        const beforeText = text.substring(0, index);
+        const lineNumber = beforeText.split('\n').length;
+        importLineNumbers.push(lineNumber);
+
+
+        const trimmedStatement = match.trim();
+        if (trimmedStatement.startsWith('import *')) {
+            starList.push(trimmedStatement);
+        } else if (trimmedStatement.includes('{') && trimmedStatement.includes('}')) {
+            const startIndex = trimmedStatement.indexOf('{');
+            const endIndex = trimmedStatement.indexOf('}');
+
+            const removeImports = trimmedStatement.substring(0, startIndex) + trimmedStatement.substring(endIndex + 1);
+            const mainImport: string | undefined = extractBetweenImportAndFrom(removeImports);
+
+            const importItems = trimmedStatement.substring(startIndex + 1, endIndex).trim();
+            const imports = importItems.split(',').map(item => item.trim());
+
+            const fromIndex = trimmedStatement.indexOf('from') + 'from'.length;
+            const moduleName = trimmedStatement.substring(fromIndex).trim().replace(/['";]/g, '');
+
+            if (mainImport) {
+
+                singleAndBracketsList.push(
+                    `import ${mainImport}, { ${imports.sort(caseInsensitiveSort).join(', ')} } from "${moduleName}";`
+                );
+
+
+            } else if (imports.length === 1) {
+                oneBracketList.push(trimmedStatement);
+            } else {
+                bracketsList.push(
+                    `import { ${imports.sort(caseInsensitiveSort).join(', ')} } from "${moduleName}";`
+                );
+            }
+        } else {
+            singleList.push(trimmedStatement);
+        }
+
+    });
+
+    function pushToListIfNotEmpty(list: string[], str: string[]): void {
+        const sortedStr = str.sort(caseInsensitiveSort).join('\n');
+        if (sortedStr.length > 1) {
+            list.push(sortedStr);
+        }
+    }
+
+    const importList: string[] = [];
+
+    pushToListIfNotEmpty(importList, starList);
+    pushToListIfNotEmpty(importList, singleList.concat(singleAndBracketsList));
+    pushToListIfNotEmpty(importList, oneBracketList);
+    pushToListIfNotEmpty(importList, bracketsList);
+
+    const importStr = importList.join('\n\n');
+
+
+    await editor.edit(editBuilder => {
+        const uniqueImportLineNumbers = [...new Set(importLineNumbers)];
+        for (let lineNumber of uniqueImportLineNumbers) {
+            editBuilder.delete(new vscode.Range(lineNumber - 1, 0, lineNumber, 0));
+        }
+    });
+
+    // clear empty line
+    await editor.edit(editBuilder => {
+
+        const document = vscode.window.activeTextEditor?.document;
+        if (document) {
+            const text = document.getText();
+            const lines = text.split('\n');
+            let startIndex = 0;
+            while (startIndex < lines.length && lines[startIndex].trim() === '') {
+                startIndex++;
+            }
+            if (startIndex > 0) {
+                editBuilder.delete(new vscode.Range(0, 0, startIndex, 0));
+            }
+        }
+    });
+
+    editor.edit(editBuilder => {
+        editBuilder.insert(new vscode.Position(0, 0), importStr + '\n\n');
     });
 }
 
-
-
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "tsx-import-sorter" is now active!');
+    let disposable = vscode.commands.registerCommand('tsx-import-sorter.sorterImports', () => {
+        try {
+            sortImports();    
+        } catch (error) {
+            console.error(error);
+            vscode.window.showInformationMessage(`tsx-import-sorter error`);
+        }
+    });
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('tsx-import-sorter.sorterImports', () => {
-        sortImports();
-
-		vscode.window.showInformationMessage('排序成功!');
-	});
-
-	context.subscriptions.push(disposable);
+    context.subscriptions.push(disposable);
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
