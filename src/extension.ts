@@ -117,11 +117,10 @@ async function sortImports() {
 
     pushToListIfNotEmpty(importList, starList);
     pushToListIfNotEmpty(importList, singleList.concat(singleAndBracketsList));
-    pushToListIfNotEmpty(importList, oneBracketList);
     pushToListIfNotEmpty(importList, bracketsList);
+    pushToListIfNotEmpty(importList, oneBracketList);
 
     const importStr = importList.join('\n\n');
-
 
     await editor.edit(editBuilder => {
         const uniqueImportLineNumbers = [...new Set(importLineNumbers)];
