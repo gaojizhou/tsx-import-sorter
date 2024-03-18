@@ -59,15 +59,18 @@ async function sortImports() {
 
     const importLineNumbers: number[] = [];
 
+    let fromIndex = 0;
     importMatches.forEach((match: string) => {
         if (match.includes('/*') || match.includes('//')) {
             return;
         }
-        const index = text.indexOf(match);
-        const beforeText = text.substring(0, index);
-        const lineNumber = beforeText.split('\n').length;
-        importLineNumbers.push(lineNumber);
-
+        let index;
+        while ((index = text.indexOf(match, fromIndex)) !== -1) {
+            const beforeText = text.substring(0, index);
+            const lineNumber = beforeText.split('\n').length;
+            importLineNumbers.push(lineNumber);
+            fromIndex = index + match.length;
+        }
 
         const trimmedStatement = match.trim();
         if (trimmedStatement.startsWith('import *')) {
@@ -114,10 +117,10 @@ async function sortImports() {
 
     const importList: string[] = [];
 
-    pushToListIfNotEmpty(importList, starList);
-    pushToListIfNotEmpty(importList, singleList.concat(singleAndBracketsList));
-    pushToListIfNotEmpty(importList, bracketsList);
-    pushToListIfNotEmpty(importList, oneBracketList);
+    pushToListIfNotEmpty(importList, [...new Set(starList)]);
+    pushToListIfNotEmpty(importList, [...new Set(singleList.concat(singleAndBracketsList))]);
+    pushToListIfNotEmpty(importList, [...new Set(bracketsList)]);
+    pushToListIfNotEmpty(importList, [...new Set(oneBracketList)]);
 
     const importStr = importList.join('\n\n');
 
