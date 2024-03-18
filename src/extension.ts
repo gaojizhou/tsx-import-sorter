@@ -43,7 +43,6 @@ async function sortImports() {
     const document = editor.document;
     const text = document.getText();
 
-    // 正则表达式匹配 import 语句
     const importRegex = /^import .+?['";]\s*$/gm;
     const importMatches = text.match(importRegex);
 

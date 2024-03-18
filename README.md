@@ -52,7 +52,7 @@ import { useLayoutEffect } from "react";
 
 ## Known Issues
 
-The following formats are not recognized
+The following formats are not recognized.
 ```typescript
 import React from "react"; // code comment
 import { /* useEffect */, useMemo, useState } from "react";
@@ -61,6 +61,12 @@ import {
     useMemo,
     useState } from "react";
 
+```
+
+Same import will coast error.
+```typescript
+import React, { useState } from "React2";
+import React, { useState } from "React2";
 ```
 
 ## Release Notes

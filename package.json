@@ -5,7 +5,7 @@
   "version": "0.0.5",
   "repository": "https://github.com/gaojizhou/tsx-import-sorter",
   "publisher": "jacobgao",
-	"icon": "images/icon.jpg",
+  "icon": "images/icon.jpg",
   "engines": {
     "vscode": "^1.87.0"
   },
@@ -24,8 +24,8 @@
     "keybindings": [
       {
         "command": "tsx-import-sorter.sorterImports",
-        "key": "ctrl+f1",
-        "mac": "cmd+f1",
+        "key": "shift+alt+g",
+        "mac": "shift+alt+g",
         "when": "editorTextFocus"
       }
     ],
@@ -33,7 +33,7 @@
       "editor/context": [
         {
           "command": "tsx-import-sorter.sorterImports",
-          "when": "resourceLangId == typescriptreact",
+          "when": "resourceLangId == typescriptreact || resourceLangId == typescript",
           "group": "source"
         }
       ]
