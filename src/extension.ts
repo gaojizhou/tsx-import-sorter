@@ -1,22 +1,15 @@
 import * as vscode from 'vscode';
 
 function caseInsensitiveSort(a: string, b: string): number {
-    const charCodeA = a.charCodeAt(0);
-    const charCodeB = b.charCodeAt(0);
+    const lowerA = a.toLowerCase();
+    const lowerB = b.toLowerCase();
 
-    if (a === a.toUpperCase()) {
-        a = a.toLowerCase();
-    }
-    if (b === b.toUpperCase()) {
-        b = b.toLowerCase();
-    }
+    if (lowerA < lowerB) { return -1; }
+    if (lowerA > lowerB) { return 1; }
 
-    if (a < b) { return -1; };
-    if (a > b) { return 1; };
+    if (a < b) { return -1; }
+    if (a > b) { return 1; }
 
-
-    if (charCodeA < charCodeB) { return -1; };
-    if (charCodeA > charCodeB) { return 1; };
     return 0;
 }
 
