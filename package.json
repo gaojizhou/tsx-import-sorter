@@ -2,7 +2,7 @@
   "name": "tsx-import-sorter",
   "displayName": "Tsx Import Sorter",
   "description": "",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "repository": "https://github.com/gaojizhou/tsx-import-sorter",
   "publisher": "jacobgao",
   "icon": "images/icon.jpg",

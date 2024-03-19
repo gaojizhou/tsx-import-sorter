@@ -1,33 +1,10 @@
 import * as vscode from 'vscode';
-
-function caseInsensitiveSort(a: string, b: string): number {
-    const lowerA = a.toLowerCase();
-    const lowerB = b.toLowerCase();
-
-    if (lowerA < lowerB) { return -1; }
-    if (lowerA > lowerB) { return 1; }
-
-    if (a < b) { return -1; }
-    if (a > b) { return 1; }
-
-    return 0;
-}
-
-function extractBetweenImportAndFrom(inputString: string): string | undefined {
-    const matches: RegExpMatchArray | null = inputString.match(/import\s+(.*?)\s+from/);
-
-    if (matches) {
-        const values = matches[1].trim().split(',').filter(item => item.length > 0).map(item => item.trim());
-        return values.join(', ');
-    } else {
-        return undefined;
-    }
-}
-
+import {
+    getLineNumbers, pushToListIfNotEmpty,
+    extractBetweenImportAndFrom, caseInsensitiveSort
+} from './utils';
 
 async function sortImports() {
-
-
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
         vscode.window.showErrorMessage('No active editor!');
@@ -37,9 +14,12 @@ async function sortImports() {
     const text = document.getText();
 
     const importRegex = /^import .+?['";]\s*$/gm;
-    const importMatches = text.match(importRegex);
+    let importMatches = text.match(importRegex);
 
-    if (!importMatches) {
+    const importRegexMultiple = /^import\s+{[\s\S]*?}\s+from\s+['"][\s\S]*?['"];\s*$/gm;
+    const importMultipleMatches = text.match(importRegexMultiple);
+
+    if (!importMatches && !importMultipleMatches) {
         vscode.window.showInformationMessage('No import statements found!');
         return;
     }
@@ -49,23 +29,36 @@ async function sortImports() {
     const oneBracketList: string[] = [];
     const bracketsList: string[] = [];
     const singleAndBracketsList: string[] = [];
+    let importLineNumbers: number[] = [];
 
-    const importLineNumbers: number[] = [];
+    if (importMultipleMatches) {
+        importMultipleMatches.forEach((match) => {
+            const lines = getLineNumbers(text, match);
+            importLineNumbers = importLineNumbers.concat(lines);
+        });
+    }
 
-    let fromIndex = 0;
-    importMatches.forEach((match: string) => {
-        if (match.includes('/*') || match.includes('//')) {
-            return;
-        }
-        let index;
-        while ((index = text.indexOf(match, fromIndex)) !== -1) {
-            const beforeText = text.substring(0, index);
-            const lineNumber = beforeText.split('\n').length;
-            importLineNumbers.push(lineNumber);
-            fromIndex = index + match.length;
-        }
+    if (importMatches) {
+        importMatches.forEach((match: string) => {
+            if (match.includes('/*') || match.includes('//')) {
+                return;
+            }
+            const lines = getLineNumbers(text, match);
+            importLineNumbers = importLineNumbers.concat(lines);
+        });
+    }
 
-        const trimmedStatement = match.trim();
+
+    const matchList: string[] = [];
+    (importMultipleMatches || []).forEach(item => {
+        matchList.push(item);
+    });
+    (importMatches || []).forEach(item => {
+        matchList.push(item);
+    });
+
+    matchList.forEach((match: string) => {
+        const trimmedStatement = match.split('\n').map(part => part.trim()).join(' ').trim();
         if (trimmedStatement.startsWith('import *')) {
             starList.push(trimmedStatement);
         } else if (trimmedStatement.includes('{') && trimmedStatement.includes('}')) {
@@ -101,13 +94,6 @@ async function sortImports() {
 
     });
 
-    function pushToListIfNotEmpty(list: string[], str: string[]): void {
-        const sortedStr = str.sort(caseInsensitiveSort).join('\n');
-        if (sortedStr.length > 1) {
-            list.push(sortedStr);
-        }
-    }
-
     const importList: string[] = [];
 
     pushToListIfNotEmpty(importList, [...new Set(starList)]);
@@ -126,7 +112,6 @@ async function sortImports() {
 
     // clear empty line
     await editor.edit(editBuilder => {
-
         const document = vscode.window.activeTextEditor?.document;
         if (document) {
             const text = document.getText();
@@ -141,7 +126,7 @@ async function sortImports() {
         }
     });
 
-    editor.edit(editBuilder => {
+    await editor.edit(editBuilder => {
         editBuilder.insert(new vscode.Position(0, 0), importStr + '\n\n');
     });
 }
@@ -149,7 +134,7 @@ async function sortImports() {
 export function activate(context: vscode.ExtensionContext) {
     let disposable = vscode.commands.registerCommand('tsx-import-sorter.sorterImports', () => {
         try {
-            sortImports();    
+            sortImports();
         } catch (error) {
             console.error(error);
             vscode.window.showInformationMessage(`tsx-import-sorter error`);
