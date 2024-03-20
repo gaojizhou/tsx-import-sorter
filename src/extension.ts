@@ -1,13 +1,10 @@
-import * as vscode from 'vscode';
-import {
-    getLineNumbers, pushToListIfNotEmpty,
-    extractBetweenImportAndFrom, caseInsensitiveSort
-} from './utils';
+import * as vscode from "vscode";
+import { getLineNumbers, pushToListIfNotEmpty, extractBetweenImportAndFrom, caseInsensitiveSort } from "./utils";
 
 async function sortImports() {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
-        vscode.window.showErrorMessage('No active editor!');
+        vscode.window.showErrorMessage("No active editor!");
         return;
     }
     const document = editor.document;
@@ -20,7 +17,7 @@ async function sortImports() {
     const importMultipleMatches = text.match(importRegexMultiple);
 
     if (!importMatches && !importMultipleMatches) {
-        vscode.window.showInformationMessage('No import statements found!');
+        vscode.window.showInformationMessage("No import statements found!");
         return;
     }
 
@@ -40,7 +37,7 @@ async function sortImports() {
 
     if (importMatches) {
         importMatches.forEach((match: string) => {
-            if (match.includes('/*') || match.includes('//')) {
+            if (match.includes("/*") || match.includes("//")) {
                 return;
             }
             const lines = getLineNumbers(text, match);
@@ -48,62 +45,56 @@ async function sortImports() {
         });
     }
 
-
     const matchList: string[] = [];
-    (importMultipleMatches || []).forEach(item => {
+    (importMultipleMatches || []).forEach((item) => {
         matchList.push(item);
     });
-    (importMatches || []).forEach(item => {
+    (importMatches || []).forEach((item) => {
         matchList.push(item);
     });
 
     matchList.forEach((match: string) => {
-        const trimmedStatement = match.split('\n').map(part => part.trim()).join(' ').trim();
-        if (trimmedStatement.startsWith('import *')) {
+        const trimmedStatement = match
+            .split("\n")
+            .map((part) => part.trim())
+            .join(" ")
+            .trim();
+        if (trimmedStatement.startsWith("import *")) {
             starList.push(trimmedStatement);
-        } else if (trimmedStatement.includes('{') && trimmedStatement.includes('}')) {
-            const startIndex = trimmedStatement.indexOf('{');
-            const endIndex = trimmedStatement.indexOf('}');
+        } else if (trimmedStatement.includes("{") && trimmedStatement.includes("}")) {
+            const startIndex = trimmedStatement.indexOf("{");
+            const endIndex = trimmedStatement.indexOf("}");
 
             const removeImports = trimmedStatement.substring(0, startIndex) + trimmedStatement.substring(endIndex + 1);
             const mainImport: string | undefined = extractBetweenImportAndFrom(removeImports);
 
             const importItems = trimmedStatement.substring(startIndex + 1, endIndex).trim();
-            const imports = importItems.split(',').map(item => item.trim());
+            const imports = importItems.split(",").map((item) => item.trim()).filter((item) => item.length > 0);
 
-            const fromIndex = trimmedStatement.indexOf('from') + 'from'.length;
-            const moduleName = trimmedStatement.substring(fromIndex).trim().replace(/['";]/g, '');
+            const fromIndex = trimmedStatement.indexOf("from") + "from".length;
+            const moduleName = trimmedStatement.substring(fromIndex).trim().replace(/['";]/g, "");
 
             if (mainImport) {
-
-                singleAndBracketsList.push(
-                    `import ${mainImport}, { ${imports.sort(caseInsensitiveSort).join(', ')} } from "${moduleName}";`
-                );
-
-
+                singleAndBracketsList.push(`import ${mainImport}, { ${imports.sort(caseInsensitiveSort).join(", ")} } from "${moduleName}";`);
             } else if (imports.length === 1) {
                 oneBracketList.push(trimmedStatement);
             } else {
-                bracketsList.push(
-                    `import { ${imports.sort(caseInsensitiveSort).join(', ')} } from "${moduleName}";`
-                );
+                bracketsList.push(`import { ${imports.sort(caseInsensitiveSort).join(", ")} } from "${moduleName}";`);
             }
         } else {
             singleList.push(trimmedStatement);
         }
-
     });
 
     const importList: string[] = [];
 
     pushToListIfNotEmpty(importList, [...new Set(starList)]);
-    pushToListIfNotEmpty(importList, [...new Set(singleList.concat(singleAndBracketsList))]);
-    pushToListIfNotEmpty(importList, [...new Set(bracketsList)]);
-    pushToListIfNotEmpty(importList, [...new Set(oneBracketList)]);
+    pushToListIfNotEmpty(importList, [...new Set(singleAndBracketsList.concat(bracketsList))]);
+    pushToListIfNotEmpty(importList, [...new Set(singleList.concat(oneBracketList))]);
 
-    const importStr = importList.join('\n\n');
+    const importStr = importList.join("\n\n");
 
-    await editor.edit(editBuilder => {
+    await editor.edit((editBuilder) => {
         const uniqueImportLineNumbers = [...new Set(importLineNumbers)];
         for (let lineNumber of uniqueImportLineNumbers) {
             editBuilder.delete(new vscode.Range(lineNumber - 1, 0, lineNumber, 0));
@@ -111,13 +102,13 @@ async function sortImports() {
     });
 
     // clear empty line
-    await editor.edit(editBuilder => {
+    await editor.edit((editBuilder) => {
         const document = vscode.window.activeTextEditor?.document;
         if (document) {
             const text = document.getText();
-            const lines = text.split('\n');
+            const lines = text.split("\n");
             let startIndex = 0;
-            while (startIndex < lines.length && lines[startIndex].trim() === '') {
+            while (startIndex < lines.length && lines[startIndex].trim() === "") {
                 startIndex++;
             }
             if (startIndex > 0) {
@@ -126,13 +117,13 @@ async function sortImports() {
         }
     });
 
-    await editor.edit(editBuilder => {
-        editBuilder.insert(new vscode.Position(0, 0), importStr + '\n\n');
+    await editor.edit((editBuilder) => {
+        editBuilder.insert(new vscode.Position(0, 0), importStr + "\n\n");
     });
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    let disposable = vscode.commands.registerCommand('tsx-import-sorter.sorterImports', () => {
+    let disposable = vscode.commands.registerCommand("tsx-import-sorter.sorterImports", () => {
         try {
             sortImports();
         } catch (error) {
@@ -145,4 +136,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() { }
+export function deactivate() {}
