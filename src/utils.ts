@@ -1,13 +1,28 @@
-
 export function caseInsensitiveSort(a: string, b: string): number {
-    const lowerA = a.toLowerCase();
-    const lowerB = b.toLowerCase();
+    const length = Math.min(a.length, b.length);
 
-    if (lowerA < lowerB) { return -1; }
-    if (lowerA > lowerB) { return 1; }
+    const lowerA = a.substring(0, length).toLowerCase();
+    const lowerB = b.substring(0, length).toLowerCase();
 
-    if (a < b) { return -1; }
-    if (a > b) { return 1; }
+    if (lowerA < lowerB) {
+        return -1;
+    }
+    if (lowerA > lowerB) {
+        return 1;
+    }
+
+    if (a < b) {
+        return -1;
+    }
+    if (a > b) {
+        return 1;
+    }
+
+    // If the strings are equal up to the length of the shorter string,
+    // the longer string is considered greater.
+    if (a.length !== b.length) {
+        return a.length < b.length ? -1 : 1;
+    }
 
     return 0;
 }
@@ -16,8 +31,12 @@ export function extractBetweenImportAndFrom(inputString: string): string | undef
     const matches: RegExpMatchArray | null = inputString.match(/import\s+(.*?)\s+from/);
 
     if (matches) {
-        const values = matches[1].trim().split(',').filter(item => item.length > 0).map(item => item.trim());
-        return values.join(', ');
+        const values = matches[1]
+            .trim()
+            .split(",")
+            .filter((item) => item.length > 0)
+            .map((item) => item.trim());
+        return values.join(", ");
     } else {
         return undefined;
     }
@@ -31,20 +50,11 @@ const sortWithMainStringFn = (a: string, b: string) => {
     const preprocessedA = preprocess(a);
     const preprocessedB = preprocess(b);
 
-    // Compare the preprocessed strings
-    if (preprocessedA < preprocessedB) {
-        return -1;
-    } else if (preprocessedA > preprocessedB) {
-        return 1;
-    } else {
-        return 0;
-    }
+    return caseInsensitiveSort(preprocessedA, preprocessedB);
 };
 
-
 export function pushToListIfNotEmpty(list: string[], str: string[]): void {
-    const sortedStr = str.sort(sortWithMainStringFn).join('\n');
-    console.log(sortedStr);
+    const sortedStr = str.sort(sortWithMainStringFn).join("\n");
     if (sortedStr.length > 1) {
         list.push(sortedStr);
     }
