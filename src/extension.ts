@@ -28,23 +28,6 @@ async function sortImports() {
     const singleAndBracketsList: string[] = [];
     let importLineNumbers: number[] = [];
 
-    if (importMultipleMatches) {
-        importMultipleMatches.forEach((match) => {
-            const lines = getLineNumbers(text, match);
-            importLineNumbers = importLineNumbers.concat(lines);
-        });
-    }
-
-    if (importMatches) {
-        importMatches.forEach((match: string) => {
-            if (match.includes("/*") || match.includes("//")) {
-                return;
-            }
-            const lines = getLineNumbers(text, match);
-            importLineNumbers = importLineNumbers.concat(lines);
-        });
-    }
-
     const matchList: string[] = [];
     (importMultipleMatches || []).forEach((item) => {
         matchList.push(item);
@@ -54,6 +37,17 @@ async function sortImports() {
     });
 
     matchList.forEach((match: string) => {
+        if (match.includes("/*") || match.includes("//")) {
+            return;
+        }
+        const lines = getLineNumbers(text, match);
+        importLineNumbers = importLineNumbers.concat(lines);
+    });
+
+    matchList.forEach((match: string) => {
+        if (match.includes("/*") || match.includes("//")) {
+            return;
+        }
         const trimmedStatement = match
             .split("\n")
             .map((part) => part.trim())
@@ -120,6 +114,7 @@ async function sortImports() {
     await editor.edit((editBuilder) => {
         editBuilder.insert(new vscode.Position(0, 0), importStr + "\n\n");
     });
+    await editor.document.save();
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -136,4 +131,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
