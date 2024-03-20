@@ -23,9 +23,28 @@ export function extractBetweenImportAndFrom(inputString: string): string | undef
     }
 }
 
+const preprocess = (str: string) => str.replace(/import|{|}|,|\s/g, "");
+
+const sortWithMainStringFn = (a: string, b: string) => {
+    // Preprocess the strings
+
+    const preprocessedA = preprocess(a);
+    const preprocessedB = preprocess(b);
+
+    // Compare the preprocessed strings
+    if (preprocessedA < preprocessedB) {
+        return -1;
+    } else if (preprocessedA > preprocessedB) {
+        return 1;
+    } else {
+        return 0;
+    }
+};
+
 
 export function pushToListIfNotEmpty(list: string[], str: string[]): void {
-    const sortedStr = str.sort(caseInsensitiveSort).join('\n');
+    const sortedStr = str.sort(sortWithMainStringFn).join('\n');
+    console.log(sortedStr);
     if (sortedStr.length > 1) {
         list.push(sortedStr);
     }
