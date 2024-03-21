@@ -2,7 +2,7 @@
   "name": "tsx-import-sorter",
   "displayName": "Tsx Import Sorter",
   "description": "",
-  "version": "0.0.7",
+  "version": "0.0.9",
   "repository": "https://github.com/gaojizhou/tsx-import-sorter",
   "publisher": "jacobgao",
   "icon": "images/icon.jpg",
@@ -12,7 +12,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onWillSaveTextDocument"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -37,6 +39,15 @@
           "group": "source"
         }
       ]
+    },
+    "configuration": {
+      "properties": {
+        "tsx-import-sorter.autoSortOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically sort imports on save"
+        }
+      }
     }
   },
   "scripts": {

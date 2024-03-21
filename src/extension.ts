@@ -117,8 +117,10 @@ async function sortImports() {
     await editor.document.save();
 }
 
+let isSortingImports = false;
+
 export function activate(context: vscode.ExtensionContext) {
-    let disposable = vscode.commands.registerCommand("tsx-import-sorter.sorterImports", () => {
+    const disposable = vscode.commands.registerCommand("tsx-import-sorter.sorterImports", () => {
         try {
             sortImports();
         } catch (error) {
@@ -128,6 +130,28 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(disposable);
+
+    const saveDisposable = vscode.workspace.onWillSaveTextDocument(async e => {
+        const config = vscode.workspace.getConfiguration("tsx-import-sorter");
+        const autoSortOnSave = config.get("autoSortOnSave", false);
+        if (!autoSortOnSave) {
+            return;
+        }
+        try {
+            if (isSortingImports) {
+                return;
+            }
+            isSortingImports = true;
+            await sortImports();
+            isSortingImports = false;
+        } catch (error) {
+            isSortingImports = false;
+            console.error(error);
+            vscode.window.showInformationMessage(`tsx-import-sorter error`);
+        }
+    });
+
+    context.subscriptions.push(saveDisposable);
 }
 
 // This method is called when your extension is deactivated
