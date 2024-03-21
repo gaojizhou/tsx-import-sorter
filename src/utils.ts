@@ -44,15 +44,26 @@ export function extractBetweenImportAndFrom(inputString: string): string | undef
 
 const preprocess = (str: string) => str.replace(/import|{|}|,|\s/g, "");
 
-const sortWithMainStringFn = (a: string, b: string) => {
-    // Preprocess the strings
-
+const sortWithMainStringFn = (a:string, b:string) => {
     const preprocessedA = preprocess(a);
     const preprocessedB = preprocess(b);
 
-    return caseInsensitiveSort(preprocessedA, preprocessedB);
-};
+    const aList = preprocessedA.split("from")
+    const bList = preprocessedB.split("from")
+    if (aList.length === 2 && bList.length === 2) {
+        const sort = caseInsensitiveSort(aList[0], bList[0]);
+        if (sort === 0) {
+            return caseInsensitiveSort(aList[1], bList[1]);
+        }
+        else {
+            return sort;
+        }
+    } else {
+        console.log('error', aList, bList)
+        return 0
+    }
 
+};
 export function pushToListIfNotEmpty(list: string[], str: string[]): void {
     const sortedStr = str.sort(sortWithMainStringFn).join("\n");
     if (sortedStr.length > 1) {
