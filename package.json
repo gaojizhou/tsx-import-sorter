@@ -59,7 +59,9 @@
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "set-test": "tsc src/test/setTestCases.ts && node src/test/setTestCases.js"
+
   },
   "devDependencies": {
     "@types/vscode": "^1.87.0",
